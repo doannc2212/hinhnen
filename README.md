@@ -1,8 +1,8 @@
 # awws
 
-a personal wallpaper daemon for Hyprland / Wayland, built for my own use. the main idea is that every piece — where wallpapers come from, how they get applied, and when they change — lives as its own independent layer. swap out any one part without touching the others.
+awws is a small wallpaper daemon i wrote for my Hyprland / Wayland setup.
 
-the goal that drives most of the design: wallpaper changes that feel alive, the way Windows Spotlight or macOS's dynamic wallpapers do — without needing to think about it.
+auto rotate wallpapers like Windows Spotlight or macOS's dynamic wallpapers do.
 
 ## how it works
 
@@ -12,22 +12,24 @@ source  →  cache  →  setter
 trigger
 ```
 
-- **source** — where images come from: your local folder, Bing daily, NASA APOD, Unsplash, or Wallhaven
-- **trigger** — when to change: on a timer, on login, or on screen unlock (via D-Bus)
-- **setter** — how to apply: [`awww`](https://codeberg.org/LGFae/awww), and only awww — awws starts `awww-daemon` itself if it isn't already running
-- **cache** — downloaded images are stored locally so things stay fast and offline-friendly
-
-each layer is independent. if you only want local wallpapers, that's all you configure.
+- **source** - where images come from
+- **trigger** - when the wallpaper changes
+- **setter** - how the wallpaper is applied: always with [`awww`](https://codeberg.org/LGFae/awww). if `awww-daemon` isn't running yet, awws starts it for you
+- **cache** - downloaded images are kept on disk
 
 ## install
 
-awws needs [`awww`](https://codeberg.org/LGFae/awww) installed (`pacman -S awww` on arch). that's the only runtime dependency.
+```bash
+curl -fsSL https://raw.githubusercontent.com/doannc2212/awws/main/install.sh | sh
+```
+
+if you'd rather build from source, please install `awww` first, then run:
 
 ```bash
 cargo install --path .
 ```
 
-or build manually:
+or build it manually:
 
 ```bash
 cargo build --release
@@ -37,22 +39,23 @@ cp target/release/awws ~/.local/bin/
 ## usage
 
 ```bash
-awws start          # start the daemon
-awws next           # change wallpaper now
+awws daemon         # start the daemon in the foreground
+awws next           # change the wallpaper now
 awws history        # show recent wallpapers
+awws clean          # clear cached images and history, keeping the current wallpaper
 ```
 
 ## config
 
-my config lives at `~/.config/awws/config.toml`. if the file doesn't exist yet, awws will just use its built-in defaults — so you only need to write the parts you actually want to change. you can also copy the [`config.toml`](config.toml) in this repo as a starting point.
+awws reads config from `~/.config/awws/config.toml`.
 
-to apply changes without restarting, run `awws reload` and the daemon will pick them up immediately.
+after editing the config, you can run `awws reload` and the daemon will reload your config changes.
 
 ---
 
 ### daemon
 
-controls when wallpapers change automatically.
+this section controls when the wallpaper changes on its own.
 
 ```toml
 [daemon]
@@ -64,52 +67,30 @@ change_on_unlock = true # change when you unlock your screen
 
 #### hooks
 
-hooks are how awws reaches *out* to the rest of your rice — when something happens inside the daemon, it runs a command you've chosen. (for the other direction, driving awws *from* a script, see [scripting](#scripting) below.)
-
-there are three of them. all run as `sh -c <command>`, so pipes, `&&`, and environment variables all work. if a hook exits with an error, awws just logs a warning and keeps going — a broken hook never interrupts the daemon. they also run fire-and-forget, so a slow hook won't hold up the next wallpaper change.
-
-here's the whole surface at a glance:
 
 | hook | runs when | placeholder |
 |------|-----------|-------------|
-| `on_change` | after every successful wallpaper change | `%w` = new wallpaper path |
-| `on_start` | once when the daemon starts | `%w` = last wallpaper from history |
-| `on_error` | an automatic change fails | `%e` = the error message |
+| `on_change` | after every wallpaper change | `%w` = new wallpaper path |
+| `on_start` | when the daemon starts | `%w` = last wallpaper from history |
+| `on_error` | an change fails | `%e` = the error message |
 
-the placeholders are plain text substitution — every `%w` (or `%e`) in your command is swapped for the value before the shell sees it, so feel free to use it more than once.
-
-**`on_change`** — runs after every successful wallpaper change. `%w` = absolute path of the new wallpaper. this is the main integration point for colorscheme pipelines.
-
-```toml
-[daemon]
-on_change = "wallust run %w"
-# on_change = "matugen image %w"
-# on_change = "wallust run %w && pkill -SIGUSR2 waybar"
-```
-
-**`on_start`** — runs once when the daemon starts, using the last wallpaper from history. `%w` = that path. the practical use: after a reboot, your colorscheme is restored immediately — before the first interval fires or any new image is fetched — so waybar, kitty, and rofi all come up already themed.
+every `%w` (or `%e`) in your command is replaced with its value before the shell sees it.
 
 ```toml
 [daemon]
 on_start = "wallust run %w"
-```
-
-if you set both `on_start` and `on_change`, and `change_on_login` is also true, you'll see both fire on login: `on_start` with the previous wallpaper, then `on_change` with the new one. that's intentional — `on_start` restores the known state, `on_change` updates it.
-
-**`on_error`** — runs when an automatic wallpaper advance fails (network down, api rate limit, empty folder, etc.). `%e` = the error message. note that it fires on *automatic* advances only — when you run `awws next` / `awws prev` yourself, any error comes back to you directly (in the terminal, or in the json response if you're talking to the socket) rather than through this hook.
-
-```toml
-[daemon]
+on_change = "wallust run %w"
 on_error = "notify-send -u critical 'awws' '%e'"
+# on_change = "matugen image %w"
 ```
 
 ---
 
 ### setter
 
-wallpapers are applied with `awww`. there's nothing to pick and nothing to start: if `awww-daemon` isn't running when awws needs it, awws starts it and waits for it to be ready. if you already launch `awww-daemon` from `exec-once`, that's fine too — awws just uses it.
+awws will spawn `awww-daemon` if it isn't running.
 
-the only knobs are the transition:
+setter support awww transition settings
 
 ```toml
 [setter]
@@ -117,33 +98,33 @@ transition = "fade"        # transition effect
 transition_duration = 1.5  # in seconds
 ```
 
-`transition` is passed straight to `awww img --transition-type`. supported types:
+`transition` is passed directly to `awww img --transition-type`. supported types:
 
 `none` `simple` `fade` `left` `right` `top` `bottom` `wipe` `wave` `grow` `center` `any` `outer` `random`
 
-run `awww img --help` for the full list your installed version supports. older configs with a `backend = ...` line still load — the key is simply ignored.
+the list can differ between awww versions, so `awww img --help` is the best way to check what yours supports.
 
 ---
 
 ### sources
 
-this is the part i find most fun to configure. you can mix and match as many sources as you like — just stack as many `[[sources.list]]` blocks as you want and awws will handle the rest.
+each source is a `[[sources.list]]` block. awws doesn't support mixing the two (more on that [below](#source-type-and-next-behaviour)).
 
 ```toml
 [sources]
 rotation = "weighted_random"  # weighted_random | round_robin
 ```
 
-the `rotation` setting controls how awws picks between your sources each time a wallpaper changes:
+`rotation` decides how awws picks a source each time the wallpaper changes:
 
-- **`weighted_random`** — picks a source at random, favouring ones with a higher `weight`. for example, if you have a local source at weight 2 and bing at weight 1, local wins roughly 67% of the time. order in the file doesn't matter.
-- **`round_robin`** — cycles through sources in the order they appear in the file, top to bottom. `weight` is ignored in this mode.
+- **`weighted_random`** - picks a source at random, favouring sources with a higher `weight`. for example, with one source at weight 2 and another at weight 1, the first is chosen about 67% of the time. the order in the file doesn't matter.
+- **`round_robin`** - goes through your sources in the order they appear in the file, top to bottom. `weight` is ignored in this mode.
 
-if a source fails for any reason (network down, empty folder, api error), awws quietly warns and tries the next one — so having multiple sources also gives you a natural fallback chain.
+if a source fails for any reason (the network is down, a folder is empty, an api returns an error), awws logs a warning and tries the next one. so adding more than one source also gives you a fallback.
 
 #### local folder
 
-pull images from a folder on your machine:
+uses images from a folder on your machine:
 
 ```toml
 [[sources.list]]
@@ -155,7 +136,7 @@ weight = 2
 
 #### bing daily
 
-bing's daily photo — downloaded and cached so it works offline too:
+bing's photo of the day. it's downloaded and cached, so it keeps working offline:
 
 ```toml
 [[sources.list]]
@@ -171,14 +152,14 @@ random photos from unsplash. you'll need a free api key from [unsplash.com/devel
 [[sources.list]]
 type = "unsplash"
 api_key = "your_api_key_here"
-query = "nature"          # optional — narrows the search
-orientation = "landscape" # optional — landscape | portrait | squarish
+query = "nature"          # optional - narrows the search
+orientation = "landscape" # optional - landscape | portrait | squarish
 weight = 1
 ```
 
 #### nasa apod
 
-nasa's astronomy picture of the day. api key available for free at [api.nasa.gov](https://api.nasa.gov).
+nasa's astronomy picture of the day. you can get a free api key at [api.nasa.gov](https://api.nasa.gov).
 
 ```toml
 [[sources.list]]
@@ -189,29 +170,29 @@ weight = 1
 
 #### wallhaven
 
-random wallpapers from [wallhaven.cc](https://wallhaven.cc). no api key needed unless you want nsfw results.
+random wallpapers from [wallhaven.cc](https://wallhaven.cc). you only need an api key if you want nsfw results.
 
 ```toml
 [[sources.list]]
 type = "wallhaven"
-api_key = "your_api_key_here"  # optional — only needed for nsfw purity
-query = "landscape"            # optional — search terms
-categories = "111"             # optional — general/anime/people as on/off bits
-purity = "100"                 # optional — sfw/sketchy/nsfw as on/off bits
+api_key = "your_api_key_here"  # optional - only needed for nsfw purity
+query = "landscape"            # optional - search terms
+categories = "111"             # optional - general/anime/people as on/off bits
+purity = "100"                 # optional - sfw/sketchy/nsfw as on/off bits
 weight = 1
 ```
 
 #### source type and `next` behaviour
 
-awws distinguishes between local and remote sources, and this affects how `awws next` works:
+awws treats local and remote sources differently, and that changes what `awws next` does:
 
-- **local-only** — `awws next` cycles through your history. when it reaches the latest wallpaper it wraps back to the oldest, so you get a smooth loop through everything that's been shown.
-- **remote-only** (bing, unsplash, nasa apod, wallhaven) — `awws next` always fetches a fresh image from the source.
-- **mixed** — combining local and remote sources in the same config is not supported. awws will refuse to start and print an error. keep all your sources either local or remote.
+- **local only** - `awws next` moves through history. when it reaches the end, it wraps around to the start, so you loop through everything that's been shown.
+- **remote only** (bing, unsplash, nasa apod, wallhaven) - `awws next` always fetches a new image from a source.
+- **mixed** - local and remote sources in the same config aren't supported.
 
 #### multiple remote sources
 
-stack multiple remote sources and awws picks between them according to `rotation` and `weight`:
+if you list several remote sources, awws picks between them using `rotation` and `weight`:
 
 ```toml
 [sources]
@@ -235,7 +216,7 @@ weight = 1
 
 #### multiple local sources
 
-point at multiple folders — useful if you keep wallpapers organised by category:
+you can also point awws at several folders, which is handy if you keep wallpapers sorted by category:
 
 ```toml
 [sources]
@@ -258,7 +239,7 @@ weight = 1
 
 ### cache
 
-downloaded images are stored locally. i find the defaults reasonable but here's how to adjust them:
+downloaded images are stored on disk. the defaults work well for me, but you can change them here:
 
 ```toml
 [cache]
@@ -267,28 +248,37 @@ history_size = 100             # how many past wallpapers to remember
 dir = "~/.cache/awws/images"  # where to store them
 ```
 
+awws will remove cache images when the cache grows past `max_size_mb`. 
+if you'd like to start fresh, you can run:
+
+```bash
+awws clean
+```
+
+it deletes files inside the cache folder.
+
 ## scripting
 
-if you want another program to *drive* awws — a keybind, a status bar, a little script — you have two options, and honestly the first one is enough for almost everything.
+if you'd like another program to control awws - a keybind, a status bar, a small script
 
-**just run the cli.** `awws next`, `awws status`, and the rest already do the right thing. under the hood the cli isn't doing anything special: it connects to a small unix socket, sends one line of json, and prints the reply. so when you shell out to `awws next`, you're already going through the same path the socket exposes.
+**option 1: run the cli.** `awws next`, `awws status`
 
 ```bash
 # a hyprland keybind, for example
 bind = $mod, W, exec, awws next
 ```
 
-**talk to the socket directly.** if you'd rather skip spawning the binary — say you're polling `status` often from a bar widget — you can speak to the socket yourself. it lives at `$XDG_RUNTIME_DIR/awws.sock` and the protocol is deliberately tiny: write one json object followed by a newline, read one json line back.
+**option 2: talk to the socket.** it lives at `$XDG_RUNTIME_DIR/awws.sock`.
 
-a request is just a command name:
+a request is a command name:
 
 ```json
 {"cmd": "next"}
 ```
 
-the valid commands are the same ones the cli has: `next`, `prev`, `pause`, `resume`, `status`, `reload`, `history`.
+the valid commands are the same as the cli's: `next`, `prev`, `pause`, `resume`, `status`, `reload`, `history`, `clean`.
 
-the reply is a single json line, tagged by a `result` field. there are three shapes:
+the reply is a json line with a `result` field. there are three shapes:
 
 ```json
 {"result": "ok", "message": "advanced", "status": { ... }}
@@ -296,15 +286,15 @@ the reply is a single json line, tagged by a `result` field. there are three sha
 {"result": "error", "message": "all sources failed"}
 ```
 
-most commands answer with `ok` and a short `message` (`status` carries the same `status` block you'd see from `awws status`); `history` answers with its own shape; and anything that went wrong comes back as `error` with a human-readable `message`.
+most commands reply with `ok`.`history` replies with its own shape. anything goes wrong, you'll get `error` message.
 
-a quick one-liner to try it, no awws binary involved:
+here's a one-liner to try it, without using the awws binary:
 
 ```bash
 echo '{"cmd":"status"}' | socat - UNIX-CONNECT:$XDG_RUNTIME_DIR/awws.sock
 ```
 
-or from python, which is roughly what i'd reach for in a real script:
+or in python:
 
 ```python
 import json, os, socket
@@ -319,16 +309,16 @@ def awws(cmd):
 print(awws("status"))
 ```
 
-one honest caveat: the cli is a stable interface and i'll try to keep it that way, but the raw json schema is closer to an internal detail. if you build something against the socket directly, a future version might shift a field under you. shelling out to the cli insulates you from that, so reach for the socket only when you actually need to.
-
 ## autostart
 
-add to your `hyprland.conf`:
+add this to your `hyprland.conf`:
 
 ```
 exec-once = awws daemon
 ```
 
+if you installed with the script (*install.sh*), autostart is already set up.
+
 ---
 
-built on [Hyprland](https://hyprland.org/), inspired by Windows Spotlight and macOS dynamic wallpapers. hope it's useful to someone else too.
+awws is built for [Hyprland](https://hyprland.org/) and inspired by Windows Spotlight and macOS dynamic wallpapers. thank you for taking a look - i hope it's useful.

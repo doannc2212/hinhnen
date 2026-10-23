@@ -26,7 +26,7 @@ impl Awww {
             .img_command(path)
             .status()
             .await
-            .context("failed to run awww — is awww installed?")?;
+            .context("failed to run awww - is awww installed?")?;
         if status.success() {
             Ok(())
         } else {
@@ -58,7 +58,7 @@ async fn ensure_daemon() -> Result<()> {
         .stdout(Stdio::null())
         .process_group(0)
         .spawn()
-        .context("failed to start awww-daemon — is awww installed?")?;
+        .context("failed to start awww-daemon - is awww installed?")?;
 
     let deadline = tokio::time::Instant::now() + DAEMON_READY_TIMEOUT;
     while tokio::time::Instant::now() < deadline {

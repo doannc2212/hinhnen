@@ -14,7 +14,7 @@ transition_duration = 1.5  # transition length in seconds
 [sources]
 rotation = "weighted_random"  # weighted_random | round_robin
 
-# mixing local and remote sources is not supported — use one type only.
+# mixing local and remote sources is not supported - use one type only.
 # local-only: `awws next` cycles through history. remote-only: fetches a new image.
 
 [[sources.list]]
@@ -31,7 +31,7 @@ weight = 1
 # type = "unsplash"
 # api_key = "your_api_key_here"
 # query = "nature"          # optional
-# orientation = "landscape" # optional — landscape | portrait | squarish
+# orientation = "landscape" # optional - landscape | portrait | squarish
 # weight = 1
 
 # [[sources.list]]
@@ -41,10 +41,10 @@ weight = 1
 
 # [[sources.list]]
 # type = "wallhaven"
-# api_key = "your_api_key_here"  # optional — only needed for NSFW purity
-# query = "landscape"            # optional — search terms
-# categories = "111"             # optional — general/anime/people as on/off bits
-# purity = "100"                 # optional — sfw/sketchy/nsfw as on/off bits
+# api_key = "your_api_key_here"  # optional - only needed for NSFW purity
+# query = "landscape"            # optional - search terms
+# categories = "111"             # optional - general/anime/people as on/off bits
+# purity = "100"                 # optional - sfw/sketchy/nsfw as on/off bits
 # weight = 1
 
 [cache]
