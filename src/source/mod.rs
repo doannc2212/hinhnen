@@ -27,6 +27,7 @@ pub struct ImageMeta {
 }
 
 #[async_trait]
+#[allow(clippy::double_must_use)] // false positive from async_trait expansion
 pub trait ImageSource: Send + Sync {
     async fn next(&self) -> Result<ImageMeta>;
     fn name(&self) -> &str;
