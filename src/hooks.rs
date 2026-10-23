@@ -1,51 +1,17 @@
-//! Event bus and exec-hook runner for daemon lifecycle notifications.
-//!
-//! [`HookBus`] owns a `broadcast` channel that carries [`DaemonEvent`] values.
-//! A single background listener task subscribes at startup and dispatches each
-//! event to the matching shell command.  The daemon calls the typed
-//! `publish_*` methods — it has no knowledge of channels, processes, or shell
-//! syntax.
-//!
-//! ```text
-//! daemon
-//!   ├─ publish_change(path)  ──┐
-//!   ├─ publish_start(path)   ──┤  broadcast::Sender<DaemonEvent>
-//!   └─ publish_error(msg)    ──┘
-//!                                   └─► listener task
-//!                                          ├─ on_change → sh -c "wallust run %w"
-//!                                          ├─ on_start  → sh -c "wallust run %w"
-//!                                          └─ on_error  → sh -c "notify-send '%e'"
-//! ```
-//!
-//! On `awws reload`, the caller replaces the `HookBus`.  Dropping the old one
-//! closes its channel; the listener gets [`broadcast::error::RecvError::Closed`]
-//! and exits cleanly before the new listener starts.
-
 use std::path::PathBuf;
 use tokio::sync::broadcast;
 
-/// All events that can be published on the hook bus.
 #[derive(Clone)]
 enum DaemonEvent {
-    /// A new wallpaper was applied successfully.  `%w` = path.
     WallpaperChanged { path: PathBuf },
-    /// The daemon started.  `%w` = last wallpaper path from persisted history.
     DaemonStarted { path: PathBuf },
-    /// A source or setter failed during an automatic advance.  `%e` = error.
     SourceError { message: String },
 }
-
-/// Owns the broadcast channel and manages listener lifecycle.
-///
-/// Call the `publish_*` methods to emit events; everything else is internal.
-/// Drop the bus to shut down all listeners.
 pub(crate) struct HookBus {
     tx: broadcast::Sender<DaemonEvent>,
 }
 
 impl HookBus {
-    /// Build the bus.  For each non-`None` command a listener is spawned that
-    /// runs the command when the matching event arrives.
     pub(crate) fn new(
         on_change: Option<&str>,
         on_start: Option<&str>,
@@ -64,26 +30,19 @@ impl HookBus {
         Self { tx }
     }
 
-    /// Emit after every successful wallpaper change.
     pub(crate) fn publish_change(&self, path: PathBuf) {
         let _ = self.tx.send(DaemonEvent::WallpaperChanged { path });
     }
 
-    /// Emit once at daemon start with the last wallpaper path from history.
     pub(crate) fn publish_start(&self, path: PathBuf) {
         let _ = self.tx.send(DaemonEvent::DaemonStarted { path });
     }
 
-    /// Emit when an automatic wallpaper advance fails.
     pub(crate) fn publish_error(&self, message: String) {
         let _ = self.tx.send(DaemonEvent::SourceError { message });
     }
 }
 
-/// Subscribe to `tx` and dispatch each event to the appropriate hook command.
-///
-/// Lagged events are skipped with a warning rather than stalling the daemon.
-/// The task exits cleanly when the sender is dropped (`RecvError::Closed`).
 fn spawn_listener(
     tx: &broadcast::Sender<DaemonEvent>,
     on_change: Option<String>,
@@ -105,7 +64,6 @@ fn spawn_listener(
     });
 }
 
-/// Match an event to its configured command and spawn it.
 fn dispatch(
     event: DaemonEvent,
     on_change: &Option<String>,
@@ -131,10 +89,6 @@ fn dispatch(
     }
 }
 
-/// Spawn an already-expanded shell command via `sh -c` in a background task.
-///
-/// Exit-status errors are logged as warnings; they never propagate to the
-/// caller so a broken hook cannot affect daemon operation.
 fn spawn_command(cmd: String) {
     tracing::debug!(cmd = %cmd, "spawning hook");
     match tokio::process::Command::new("sh")
@@ -166,8 +120,6 @@ mod tests {
     use super::*;
     use std::path::Path;
 
-    // Mirror the substitution done inside `dispatch` so we can test it without
-    // spawning real processes.
     fn sub_path(cmd: &str, path: &Path) -> String {
         cmd.replace("%w", &path.to_string_lossy())
     }

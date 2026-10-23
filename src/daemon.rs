@@ -1,15 +1,15 @@
 use crate::{
+    awww::Awww,
     cache::ImageCache,
     config,
     history::{History, HistoryEntry},
     hooks::HookBus,
     ipc::{self, ClientResponse, CommandEnvelope, DaemonCommand, StatusResponse},
-    setter::{self, SetterOptions, WallpaperSetter},
     source::SourceRegistry,
     trigger::{self, TriggerEvent},
 };
 use anyhow::{Context, Result};
-use std::{path::PathBuf, sync::Arc, time::Duration};
+use std::{path::PathBuf, time::Duration};
 use tokio::{signal, sync::mpsc};
 
 pub async fn run(config_path: PathBuf) -> Result<()> {
@@ -57,8 +57,7 @@ struct DaemonState {
     cache: ImageCache,
     history: History,
     sources: SourceRegistry,
-    setter: Arc<dyn WallpaperSetter>,
-    setter_opts: SetterOptions,
+    awww: Awww,
     triggers: mpsc::Receiver<TriggerEvent>,
     hooks: HookBus,
     paused: bool,
@@ -78,8 +77,7 @@ impl DaemonState {
         let cache = ImageCache::new(&cfg.cache).await?;
         let history = cache.load_history(cfg.cache.history_size).await?;
         let sources = SourceRegistry::from_config(&cfg, cache.clone())?;
-        let setter = setter::from_config(&cfg.setter)?;
-        let setter_opts = SetterOptions::from(&cfg.setter);
+        let awww = Awww::new(&cfg.setter);
         let triggers = trigger::spawn_all(&cfg.daemon);
         let next_change_at = next_change_at(cfg.daemon.interval_secs);
         let hooks = HookBus::new(
@@ -94,8 +92,7 @@ impl DaemonState {
             cache,
             history,
             sources,
-            setter,
-            setter_opts,
+            awww,
             triggers,
             hooks,
             paused: false,
@@ -116,8 +113,7 @@ impl DaemonState {
         let cache = ImageCache::new(&cfg.cache).await?;
         let history = cache.load_history(cfg.cache.history_size).await?;
         let sources = SourceRegistry::from_config(&cfg, cache.clone())?;
-        let setter = setter::from_config(&cfg.setter)?;
-        let setter_opts = SetterOptions::from(&cfg.setter);
+        let awww = Awww::new(&cfg.setter);
         let triggers = trigger::spawn_all(&cfg.daemon);
         let hooks = HookBus::new(
             cfg.daemon.on_change.as_deref(),
@@ -129,8 +125,7 @@ impl DaemonState {
         self.cache = cache;
         self.history = history;
         self.sources = sources;
-        self.setter = setter;
-        self.setter_opts = setter_opts;
+        self.awww = awww;
         self.triggers = triggers;
         self.hooks = hooks;
         self.next_change_at = next_change_at(self.cfg.daemon.interval_secs);
@@ -193,8 +188,7 @@ impl DaemonState {
             }
         };
 
-        if let Err(err) = self.setter.set(&meta.path, &self.setter_opts).await {
-            let err = err.context(format!("setter {} failed", self.setter.name()));
+        if let Err(err) = self.awww.set(&meta.path).await {
             self.hooks.publish_error(err.to_string());
             return Err(err);
         }
@@ -212,7 +206,7 @@ impl DaemonState {
             .history
             .previous()
             .context("already at oldest history entry")?;
-        self.setter.set(&entry.path, &self.setter_opts).await?;
+        self.awww.set(&entry.path).await?;
         self.hooks.publish_change(entry.path.clone());
         self.cache.save_history(&self.history).await?;
         Ok(entry)
@@ -220,7 +214,7 @@ impl DaemonState {
 
     async fn apply_next(&mut self) -> Result<HistoryEntry> {
         if let Some(entry) = self.history.next_existing() {
-            self.setter.set(&entry.path, &self.setter_opts).await?;
+            self.awww.set(&entry.path).await?;
             self.hooks.publish_change(entry.path.clone());
             self.cache.save_history(&self.history).await?;
             return Ok(entry);
@@ -229,7 +223,7 @@ impl DaemonState {
         match self.source_kind {
             config::SourceKind::LocalOnly => {
                 if let Some(entry) = self.history.wrap_to_first() {
-                    self.setter.set(&entry.path, &self.setter_opts).await?;
+                    self.awww.set(&entry.path).await?;
                     self.hooks.publish_change(entry.path.clone());
                     self.cache.save_history(&self.history).await?;
                     return Ok(entry);

@@ -14,12 +14,14 @@ trigger
 
 - **source** — where images come from: your local folder, Bing daily, NASA APOD, Unsplash, or Wallhaven
 - **trigger** — when to change: on a timer, on login, or on screen unlock (via D-Bus)
-- **setter** — how to apply: `awww`, `hyprpaper`, `swaybg`, or `swww`
+- **setter** — how to apply: [`awww`](https://codeberg.org/LGFae/awww), and only awww — awws starts `awww-daemon` itself if it isn't already running
 - **cache** — downloaded images are stored locally so things stay fast and offline-friendly
 
-each layer is independent. if you only want local wallpapers with `awww`, that's all you configure.
+each layer is independent. if you only want local wallpapers, that's all you configure.
 
 ## install
+
+awws needs [`awww`](https://codeberg.org/LGFae/awww) installed (`pacman -S awww` on arch). that's the only runtime dependency.
 
 ```bash
 cargo install --path .
@@ -105,20 +107,21 @@ on_error = "notify-send -u critical 'awws' '%e'"
 
 ### setter
 
-controls how the wallpaper gets applied. i mostly use `awww` but the others work too.
+wallpapers are applied with `awww`. there's nothing to pick and nothing to start: if `awww-daemon` isn't running when awws needs it, awws starts it and waits for it to be ready. if you already launch `awww-daemon` from `exec-once`, that's fine too — awws just uses it.
+
+the only knobs are the transition:
 
 ```toml
 [setter]
-backend = "awww"           # awww | hyprpaper | swww | swaybg
-transition = "fade"        # transition effect (for awww|swww)
+transition = "fade"        # transition effect
 transition_duration = 1.5  # in seconds
 ```
 
-awws passes `transition` directly to the backend binary, so the valid values depend on what you have installed. for `swww`, the supported types are:
+`transition` is passed straight to `awww img --transition-type`. supported types:
 
-`none` `fade` `left` `right` `top` `bottom` `wipe` `wave` `grow` `center` `any` `outer` `random`
+`none` `simple` `fade` `left` `right` `top` `bottom` `wipe` `wave` `grow` `center` `any` `outer` `random`
 
-for `awww`, run `awww img --help` to see what your installed version supports. `hyprpaper` and `swaybg` don't support transitions — the field is ignored for both.
+run `awww img --help` for the full list your installed version supports. older configs with a `backend = ...` line still load — the key is simply ignored.
 
 ---
 

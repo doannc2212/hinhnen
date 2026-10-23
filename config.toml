@@ -7,9 +7,9 @@ change_on_unlock = true # change wallpaper when you unlock your screen
 # on_error  = "notify-send -u critical 'awws' '%e'"  # run on source/setter failure (%e = error)
 
 [setter]
-backend = "awww"           # awww | hyprpaper | swww | swaybg
-transition = "fade"        # transition effect — passed directly to the backend binary
-transition_duration = 1.5  # transition length in seconds (ignored by hyprpaper and swaybg)
+# wallpapers are applied with awww. awws starts awww-daemon for you if it isn't running.
+transition = "fade"        # none | simple | fade | left | right | top | bottom | wipe | wave | grow | center | any | outer | random
+transition_duration = 1.5  # transition length in seconds
 
 [sources]
 rotation = "weighted_random"  # weighted_random | round_robin

@@ -17,21 +17,14 @@ pub struct DaemonConfig {
     pub interval_secs: u64,
     pub change_on_login: bool,
     pub change_on_unlock: bool,
-    /// Shell command run after every wallpaper change. `%w` = wallpaper path.
     pub on_change: Option<String>,
-    /// Shell command run once at daemon start. `%w` = last wallpaper path from
-    /// history. Useful for restoring a colorscheme immediately after reboot,
-    /// before the first interval fires.
     pub on_start: Option<String>,
-    /// Shell command run when a source fails. `%e` = error message. Useful for
-    /// surfacing failures via `notify-send` or a status bar widget.
     pub on_error: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(default)]
 pub struct SetterConfig {
-    pub backend: String,
     pub transition: Option<String>,
     pub transition_duration: f32,
 }
@@ -119,7 +112,6 @@ impl Default for DaemonConfig {
 impl Default for SetterConfig {
     fn default() -> Self {
         Self {
-            backend: "auto".to_string(),
             transition: Some("fade".to_string()),
             transition_duration: 1.5,
         }
@@ -371,9 +363,21 @@ mod tests {
     #[test]
     fn default_setter_config() {
         let cfg = SetterConfig::default();
-        assert_eq!(cfg.backend, "auto");
         assert_eq!(cfg.transition, Some("fade".to_string()));
         assert_eq!(cfg.transition_duration, 1.5);
+    }
+
+    #[test]
+    fn legacy_backend_key_is_ignored() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("config.toml");
+        std::fs::write(
+            &path,
+            "[setter]\nbackend = \"swww\"\ntransition = \"wipe\"\n",
+        )
+        .unwrap();
+        let cfg = load(&path).unwrap();
+        assert_eq!(cfg.setter.transition.as_deref(), Some("wipe"));
     }
 
     #[test]
