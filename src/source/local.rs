@@ -123,7 +123,7 @@ mod tests {
     #[test]
     fn new_fails_for_missing_directory() {
         let result = LocalSource::new(
-            PathBuf::from("/nonexistent/awws/wallpapers"),
+            PathBuf::from("/nonexistent/hinhnen/wallpapers"),
             LocalOrder::Random,
         );
         assert!(result.is_err());

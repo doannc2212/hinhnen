@@ -69,7 +69,7 @@ pub struct CommandEnvelope {
 pub fn socket_path() -> Result<PathBuf> {
     std::env::var_os("XDG_RUNTIME_DIR")
         .map(PathBuf::from)
-        .map(|dir| dir.join("awws.sock"))
+        .map(|dir| dir.join("hinhnen.sock"))
         .ok_or_else(|| anyhow!("XDG_RUNTIME_DIR is not set"))
 }
 
@@ -262,6 +262,6 @@ mod tests {
     fn socket_path_uses_xdg_runtime_dir() {
         unsafe { std::env::set_var("XDG_RUNTIME_DIR", "/run/user/1000") };
         let path = socket_path().unwrap();
-        assert_eq!(path, PathBuf::from("/run/user/1000/awws.sock"));
+        assert_eq!(path, PathBuf::from("/run/user/1000/hinhnen.sock"));
     }
 }

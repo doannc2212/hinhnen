@@ -132,7 +132,7 @@ impl Default for CacheConfig {
         Self {
             max_size_mb: 500,
             history_size: 100,
-            dir: "~/.cache/awws/images".to_string(),
+            dir: "~/.cache/hinhnen/images".to_string(),
         }
     }
 }
@@ -159,7 +159,7 @@ pub fn load(path: &std::path::Path) -> Result<AppConfig> {
 pub fn default_config_path() -> PathBuf {
     dirs::config_dir()
         .unwrap_or_else(|| PathBuf::from("."))
-        .join("awws")
+        .join("hinhnen")
         .join("config.toml")
 }
 
@@ -232,7 +232,7 @@ mod tests {
 
     #[test]
     fn expand_path_absolute() {
-        assert_eq!(expand_path("/tmp/awws"), PathBuf::from("/tmp/awws"));
+        assert_eq!(expand_path("/tmp/hinhnen"), PathBuf::from("/tmp/hinhnen"));
     }
 
     #[test]
@@ -334,11 +334,11 @@ mod tests {
     fn on_error_parses_from_toml() {
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("config.toml");
-        std::fs::write(&path, "[daemon]\non_error = \"notify-send awws '%e'\"\n").unwrap();
+        std::fs::write(&path, "[daemon]\non_error = \"notify-send hinhnen '%e'\"\n").unwrap();
         let cfg = load(&path).unwrap();
         assert_eq!(
             cfg.daemon.on_error.as_deref(),
-            Some("notify-send awws '%e'")
+            Some("notify-send hinhnen '%e'")
         );
     }
 
@@ -385,6 +385,6 @@ mod tests {
         let cfg = CacheConfig::default();
         assert_eq!(cfg.max_size_mb, 500);
         assert_eq!(cfg.history_size, 100);
-        assert_eq!(cfg.dir, "~/.cache/awws/images");
+        assert_eq!(cfg.dir, "~/.cache/hinhnen/images");
     }
 }

@@ -13,7 +13,7 @@ use clap::{Parser, Subcommand};
 use tracing_subscriber::{EnvFilter, fmt, layer::SubscriberExt, util::SubscriberInitExt};
 
 #[derive(Debug, Parser)]
-#[command(name = "awws", version, about = "awws wallpaper daemon and CLI")]
+#[command(name = "hinhnen", version, about = "hinhnen wallpaper daemon and CLI")]
 struct Cli {
     #[command(subcommand)]
     command: Option<Command>,
@@ -50,10 +50,10 @@ async fn main() -> Result<()> {
         .unwrap_or_else(|| {
             std::path::PathBuf::from(std::env::var("HOME").unwrap_or_default()).join(".local/state")
         })
-        .join("awws");
+        .join("hinhnen");
     std::fs::create_dir_all(&log_dir).ok();
 
-    let file_appender = tracing_appender::rolling::daily(&log_dir, "awws.log");
+    let file_appender = tracing_appender::rolling::daily(&log_dir, "hinhnen.log");
     let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
 
     let env_filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));

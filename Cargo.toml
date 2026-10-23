@@ -1,12 +1,12 @@
 [package]
-name = "awws"
+name = "hinhnen"
 version = "0.1.0"
 edition = "2024"
 description = "A modular wallpaper daemon for Hyprland/Wayland"
 license = "MIT"
 
 [[bin]]
-name = "awws"
+name = "hinhnen"
 path = "src/main.rs"
 
 [dependencies]

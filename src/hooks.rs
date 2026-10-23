@@ -129,10 +129,10 @@ mod tests {
 
     #[test]
     fn on_change_substitutes_path() {
-        let path = Path::new("/home/user/.cache/awws/images/abc.jpg");
+        let path = Path::new("/home/user/.cache/hinhnen/images/abc.jpg");
         assert_eq!(
             sub_path("wallust run %w", path),
-            "wallust run /home/user/.cache/awws/images/abc.jpg"
+            "wallust run /home/user/.cache/hinhnen/images/abc.jpg"
         );
     }
 
@@ -156,10 +156,10 @@ mod tests {
 
     #[test]
     fn on_start_substitutes_path() {
-        let path = Path::new("/home/user/.cache/awws/images/last.jpg");
+        let path = Path::new("/home/user/.cache/hinhnen/images/last.jpg");
         assert_eq!(
             sub_path("wallust run %w", path),
-            "wallust run /home/user/.cache/awws/images/last.jpg"
+            "wallust run /home/user/.cache/hinhnen/images/last.jpg"
         );
     }
 
@@ -167,18 +167,18 @@ mod tests {
     fn on_error_substitutes_message() {
         assert_eq!(
             sub_error(
-                "notify-send -u critical 'awws' '%e'",
+                "notify-send -u critical 'hinhnen' '%e'",
                 "connection timed out"
             ),
-            "notify-send -u critical 'awws' 'connection timed out'"
+            "notify-send -u critical 'hinhnen' 'connection timed out'"
         );
     }
 
     #[test]
     fn on_error_no_placeholder_unchanged() {
         assert_eq!(
-            sub_error("notify-send awws error", "anything"),
-            "notify-send awws error"
+            sub_error("notify-send hinhnen error", "anything"),
+            "notify-send hinhnen error"
         );
     }
 

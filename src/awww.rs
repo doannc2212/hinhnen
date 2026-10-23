@@ -52,7 +52,7 @@ async fn ensure_daemon() -> Result<()> {
     }
 
     tracing::info!("awww-daemon is not running; starting it");
-    // Own process group so the daemon outlives Ctrl-C on awws in a terminal.
+    // Own process group so the daemon outlives Ctrl-C on hinhnen in a terminal.
     Command::new("awww-daemon")
         .stdin(Stdio::null())
         .stdout(Stdio::null())

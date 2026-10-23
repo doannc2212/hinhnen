@@ -1,6 +1,6 @@
-# awws
+# hinhnen
 
-awws is a small wallpaper daemon i wrote for my Hyprland / Wayland setup.
+hinhnen is a small wallpaper daemon i wrote for my Hyprland / Wayland setup.
 
 auto rotate wallpapers like Windows Spotlight or macOS's dynamic wallpapers do.
 
@@ -14,13 +14,13 @@ trigger
 
 - **source** - where images come from
 - **trigger** - when the wallpaper changes
-- **setter** - how the wallpaper is applied: always with [`awww`](https://codeberg.org/LGFae/awww). if `awww-daemon` isn't running yet, awws starts it for you
+- **setter** - how the wallpaper is applied: always with [`awww`](https://codeberg.org/LGFae/awww). if `awww-daemon` isn't running yet, hinhnen starts it for you
 - **cache** - downloaded images are kept on disk
 
 ## install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/doannc2212/awws/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/doannc2212/hinhnen/main/install.sh | sh
 ```
 
 if you'd rather build from source, please install `awww` first, then run:
@@ -33,23 +33,23 @@ or build it manually:
 
 ```bash
 cargo build --release
-cp target/release/awws ~/.local/bin/
+cp target/release/hinhnen ~/.local/bin/
 ```
 
 ## usage
 
 ```bash
-awws daemon         # start the daemon in the foreground
-awws next           # change the wallpaper now
-awws history        # show recent wallpapers
-awws clean          # clear cached images and history, keeping the current wallpaper
+hinhnen daemon         # start the daemon in the foreground
+hinhnen next           # change the wallpaper now
+hinhnen history        # show recent wallpapers
+hinhnen clean          # clear cached images and history, keeping the current wallpaper
 ```
 
 ## config
 
-awws reads config from `~/.config/awws/config.toml`.
+hinhnen reads config from `~/.config/hinhnen/config.toml`.
 
-after editing the config, you can run `awws reload` and the daemon will reload your config changes.
+after editing the config, you can run `hinhnen reload` and the daemon will reload your config changes.
 
 ---
 
@@ -80,7 +80,7 @@ every `%w` (or `%e`) in your command is replaced with its value before the shell
 [daemon]
 on_start = "wallust run %w"
 on_change = "wallust run %w"
-on_error = "notify-send -u critical 'awws' '%e'"
+on_error = "notify-send -u critical 'hinhnen' '%e'"
 # on_change = "matugen image %w"
 ```
 
@@ -88,7 +88,7 @@ on_error = "notify-send -u critical 'awws' '%e'"
 
 ### setter
 
-awws will spawn `awww-daemon` if it isn't running.
+hinhnen will spawn `awww-daemon` if it isn't running.
 
 setter support awww transition settings
 
@@ -108,19 +108,19 @@ the list can differ between awww versions, so `awww img --help` is the best way 
 
 ### sources
 
-each source is a `[[sources.list]]` block. awws doesn't support mixing the two (more on that [below](#source-type-and-next-behaviour)).
+each source is a `[[sources.list]]` block. hinhnen doesn't support mixing the two (more on that [below](#source-type-and-next-behaviour)).
 
 ```toml
 [sources]
 rotation = "weighted_random"  # weighted_random | round_robin
 ```
 
-`rotation` decides how awws picks a source each time the wallpaper changes:
+`rotation` decides how hinhnen picks a source each time the wallpaper changes:
 
 - **`weighted_random`** - picks a source at random, favouring sources with a higher `weight`. for example, with one source at weight 2 and another at weight 1, the first is chosen about 67% of the time. the order in the file doesn't matter.
 - **`round_robin`** - goes through your sources in the order they appear in the file, top to bottom. `weight` is ignored in this mode.
 
-if a source fails for any reason (the network is down, a folder is empty, an api returns an error), awws logs a warning and tries the next one. so adding more than one source also gives you a fallback.
+if a source fails for any reason (the network is down, a folder is empty, an api returns an error), hinhnen logs a warning and tries the next one. so adding more than one source also gives you a fallback.
 
 #### local folder
 
@@ -184,15 +184,15 @@ weight = 1
 
 #### source type and `next` behaviour
 
-awws treats local and remote sources differently, and that changes what `awws next` does:
+hinhnen treats local and remote sources differently, and that changes what `hinhnen next` does:
 
-- **local only** - `awws next` moves through history. when it reaches the end, it wraps around to the start, so you loop through everything that's been shown.
-- **remote only** (bing, unsplash, nasa apod, wallhaven) - `awws next` always fetches a new image from a source.
+- **local only** - `hinhnen next` moves through history. when it reaches the end, it wraps around to the start, so you loop through everything that's been shown.
+- **remote only** (bing, unsplash, nasa apod, wallhaven) - `hinhnen next` always fetches a new image from a source.
 - **mixed** - local and remote sources in the same config aren't supported.
 
 #### multiple remote sources
 
-if you list several remote sources, awws picks between them using `rotation` and `weight`:
+if you list several remote sources, hinhnen picks between them using `rotation` and `weight`:
 
 ```toml
 [sources]
@@ -216,7 +216,7 @@ weight = 1
 
 #### multiple local sources
 
-you can also point awws at several folders, which is handy if you keep wallpapers sorted by category:
+you can also point hinhnen at several folders, which is handy if you keep wallpapers sorted by category:
 
 ```toml
 [sources]
@@ -245,30 +245,30 @@ downloaded images are stored on disk. the defaults work well for me, but you can
 [cache]
 max_size_mb = 500              # max disk space for cached images
 history_size = 100             # how many past wallpapers to remember
-dir = "~/.cache/awws/images"  # where to store them
+dir = "~/.cache/hinhnen/images"  # where to store them
 ```
 
-awws will remove cache images when the cache grows past `max_size_mb`. 
+hinhnen will remove cache images when the cache grows past `max_size_mb`. 
 if you'd like to start fresh, you can run:
 
 ```bash
-awws clean
+hinhnen clean
 ```
 
 it deletes files inside the cache folder.
 
 ## scripting
 
-if you'd like another program to control awws - a keybind, a status bar, a small script
+if you'd like another program to control hinhnen - a keybind, a status bar, a small script
 
-**option 1: run the cli.** `awws next`, `awws status`
+**option 1: run the cli.** `hinhnen next`, `hinhnen status`
 
 ```bash
 # a hyprland keybind, for example
-bind = $mod, W, exec, awws next
+bind = $mod, W, exec, hinhnen next
 ```
 
-**option 2: talk to the socket.** it lives at `$XDG_RUNTIME_DIR/awws.sock`.
+**option 2: talk to the socket.** it lives at `$XDG_RUNTIME_DIR/hinhnen.sock`.
 
 a request is a command name:
 
@@ -288,10 +288,10 @@ the reply is a json line with a `result` field. there are three shapes:
 
 most commands reply with `ok`.`history` replies with its own shape. anything goes wrong, you'll get `error` message.
 
-here's a one-liner to try it, without using the awws binary:
+here's a one-liner to try it, without using the hinhnen binary:
 
 ```bash
-echo '{"cmd":"status"}' | socat - UNIX-CONNECT:$XDG_RUNTIME_DIR/awws.sock
+echo '{"cmd":"status"}' | socat - UNIX-CONNECT:$XDG_RUNTIME_DIR/hinhnen.sock
 ```
 
 or in python:
@@ -299,14 +299,14 @@ or in python:
 ```python
 import json, os, socket
 
-def awws(cmd):
-    path = os.path.join(os.environ["XDG_RUNTIME_DIR"], "awws.sock")
+def hinhnen(cmd):
+    path = os.path.join(os.environ["XDG_RUNTIME_DIR"], "hinhnen.sock")
     with socket.socket(socket.AF_UNIX) as s:
         s.connect(path)
         s.sendall((json.dumps({"cmd": cmd}) + "\n").encode())
         return json.loads(s.makefile().readline())
 
-print(awws("status"))
+print(hinhnen("status"))
 ```
 
 ## autostart
@@ -314,11 +314,11 @@ print(awws("status"))
 add this to your `hyprland.conf`:
 
 ```
-exec-once = awws daemon
+exec-once = hinhnen daemon
 ```
 
 if you installed with the script (*install.sh*), autostart is already set up.
 
 ---
 
-awws is built for [Hyprland](https://hyprland.org/) and inspired by Windows Spotlight and macOS dynamic wallpapers. thank you for taking a look - i hope it's useful.
+hinhnen is built for [Hyprland](https://hyprland.org/) and inspired by Windows Spotlight and macOS dynamic wallpapers. thank you for taking a look - i hope it's useful.

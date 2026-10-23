@@ -4,10 +4,10 @@ change_on_login = true  # change wallpaper when you log in
 change_on_unlock = true # change wallpaper when you unlock your screen
 # on_change = "wallust run %w"  # run after every wallpaper change (%w = wallpaper path)
 # on_start  = "wallust run %w"  # run once at daemon start (%w = last wallpaper from history)
-# on_error  = "notify-send -u critical 'awws' '%e'"  # run on source/setter failure (%e = error)
+# on_error  = "notify-send -u critical 'hinhnen' '%e'"  # run on source/setter failure (%e = error)
 
 [setter]
-# wallpapers are applied with awww. awws starts awww-daemon for you if it isn't running.
+# wallpapers are applied with awww. hinhnen starts awww-daemon for you if it isn't running.
 transition = "fade"        # none | simple | fade | left | right | top | bottom | wipe | wave | grow | center | any | outer | random
 transition_duration = 1.5  # transition length in seconds
 
@@ -15,7 +15,7 @@ transition_duration = 1.5  # transition length in seconds
 rotation = "weighted_random"  # weighted_random | round_robin
 
 # mixing local and remote sources is not supported - use one type only.
-# local-only: `awws next` cycles through history. remote-only: fetches a new image.
+# local-only: `hinhnen next` cycles through history. remote-only: fetches a new image.
 
 [[sources.list]]
 type = "bing"
@@ -50,4 +50,4 @@ weight = 1
 [cache]
 max_size_mb = 500              # max disk space for cached images, in MB
 history_size = 100             # how many past wallpapers to remember
-dir = "~/.cache/awws/images"  # where to store downloaded images
+dir = "~/.cache/hinhnen/images"  # where to store downloaded images
