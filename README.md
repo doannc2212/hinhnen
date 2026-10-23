@@ -1,8 +1,11 @@
 # hinhnen
 
-hinhnen is a small wallpaper daemon i wrote for my Hyprland / Wayland setup.
+the name comes from Vietnamese *hình nền* (`/hïŋ˨˩ nen˨˩/`) mean wallpaper.
+
+a small wallpaper daemon i wrote for my Hyprland / Wayland setup.
 
 auto rotate wallpapers like Windows Spotlight or macOS's dynamic wallpapers do.
+
 
 ## how it works
 
